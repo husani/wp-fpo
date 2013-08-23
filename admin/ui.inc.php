@@ -14,8 +14,8 @@
 					<th scope="row"><label for="wpfpo_content_type"><?php _e('Content type?'); ?></label></th>
 					<td>
 						<select name="wpfpo_content_type" id="wpfpo_content_type">
-							<option name="loremipsum"><?php _e('Lorem ipsum dolor sit amet, consectetur adipiscing elit.'); ?></option>
-							<option name="shakespeare">Blah blah</option>
+							<option name="loremipsum"><?php _e('Standard "Lorem ipsum..."'); ?></option>
+							<option name="alice"><?php _e('Alice In Wonderland.'); ?></option>
 						</select>
 						<p class="description"><?php _e('A description of this option can go here'); ?></p>
 					</td>
@@ -33,9 +33,9 @@
 						<fieldset>
 							<label title="yes">
 								<input type="radio" name="wpfpo_category_bool" value="yes"/>
-								<span><?php _e('Yes'); ?></span>
+								<span><?php _e('Yes, create'); ?> <input name="wpfpo_category_num" type="text" id="wpfpo_category_num" class="small-text"/> <?php _e('per post'); ?></span>
 							</label>
-							&nbsp;
+							<br/>
 							<label title="no">
 								<input type="radio" name="wpfpo_category_bool" value="no"/>
 								<span><?php _e('No'); ?></span>
@@ -50,9 +50,9 @@
 						<fieldset>
 							<label>
 								<input type="radio" name="wpfpo_tag_bool" value="yes"/>
-								<span><?php _e('Yes'); ?></span>
+								<span><?php _e('Yes, create'); ?> <input name="wpfpo_tag_num" type="text" id="wpfpo_tag_num" class="small-text"/> <?php _e('per post'); ?></span>
 							</label>
-							&nbsp;
+							<br/>
 							<label>
 								<input type="radio" name="wpfpo_tag_bool" value="no"/>
 								<span><?php _e('No'); ?></span>
@@ -89,17 +89,17 @@
 					<td>
 						<fieldset>
 							<label>
-								<input type="radio" name="wpfpo_images" value="yes_fpo"/>
+								<input type="radio" name="wpfpo_content_structure" value="flat"/>
 								<span><?php _e('Flat paragraphs of text'); ?></span>
 							</label>
 							<br/>
 							<label>
-								<input type="radio" name="wpfpo_images" value="yes_flickr"/>
+								<input type="radio" name="wpfpo_content_structure" value="rich"/>
 								<span><?php _e('Rich text via HTML (h1...h6, blockquote, etc)'); ?></span>
 							</label>
 							<br/>
 							<label>
-								<input type="radio" name="wpfpo_images" value="no"/>
+								<input type="radio" name="wpfpo_content_structure" value="both"/>
 								<span><?php _e('Both'); ?></span>
 							</label>
 							<br/>
