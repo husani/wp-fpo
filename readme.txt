@@ -12,12 +12,9 @@ Automatically create FPO blog posts to help your WordPress design and developmen
 
 == Description ==
 
-Create FPO blog posts to help your WordPress design and development process. This plugin creates randomly-generated 
-content (via Markov chains from various sources) and creates for placement only posts. All posts are tagged #wp-fpo 
-so you can easily find and delete them when necessary.
+Create FPO blog posts to help your WordPress design and development process. This plugin creates randomly-generated content (via Markov chains from various sources) and creates for placement only posts. All posts are tagged #wp-fpo so you can easily find and delete them when necessary.
 
-A few generic text sources (Lorem Ipsum, the US Constitution, and MLK's Letter From A Birmingham Jail) are available
-for selection.
+A few generic text sources (Lorem Ipsum, the US Constitution, and MLK's Letter From A Birmingham Jail) are available for selection.
 
 == Installation ==
 
@@ -31,8 +28,7 @@ The installation process is the same as all WP plugins:
 
 = What is this plugin for? =
 
-I use WP for lots of skeleton site builds -- and the default "hello world" post isn't enough to build a theme or 
-create a design around. This plugin uses generic text sources to create a user-defined number of fake posts. Simple.
+I use WP for lots of skeleton site builds -- and the default "hello world" post isn't enough to build a theme or create a design around. This plugin uses generic text sources to create a user-defined number of fake posts. Simple.
 
 = How should I report a bug? =
 
