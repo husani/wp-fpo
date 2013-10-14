@@ -89,7 +89,7 @@ class wpfpo{
 		//get all content from text files to avoid a bunch of needless i/o
 		$this->source_content = file_get_contents($this->content_sources['content'][$this->user_options['wpfpo_content_source']]);
 		
-		
+		//loop through user-requested number of posts, make posts/tags/categories
 		$created_count = 0;
 		for($i = 0; $i < $this->user_options['wpfpo_num_posts']; $i++){
 			$tags = $this->_postTag();
@@ -100,10 +100,12 @@ class wpfpo{
 						'post_title' => $this->_postTitle(),
 						'post_status' => 'publish'
 				);	
+
 			if($post_id = wp_insert_post($args)){
 				//add categories if necessary
 				if($this->user_options['wpfpo_category_bool']){
 					//create categories
+					unset($category_ids);
 					$categories = $this->_postCategory();
 					foreach($categories as $category){
 						$category_ids[] = wp_create_category($category);
@@ -120,21 +122,16 @@ class wpfpo{
 				//and we're done.
 				$created_count++;
 			}
+
 		}
+		//if what we've made matches what we wanted to make, we're good -- otherwise, something went wrong.
 		if($created_count == $this->user_options['wpfpo_num_posts']){
 			return true;
 		} else {
 			return false;
 		}
 	}
-	
-	/**
-	 * Generate FPO author
-	 */
-	private function _postAuthor(){
-	
-	}
-	
+
 	/**
 	 * Generate FPO category
 	 */
@@ -151,7 +148,7 @@ class wpfpo{
 	 */
 	private function _postTag(){
 		if($this->user_options['wpfpo_tag_bool']){
-			$tags_array = $this->_getFromTextfile($this->user_options['wpfpo_tag_num'], $this->content_sources['meta']['tag']);
+			$tags_array = $this->_getFromTextfile($this->user_options['wpfpo_tag_num']-1, $this->content_sources['meta']['tag']); //minus 1 so we can have the plugin's tag
 			array_unshift($tags_array, "wp-fpo");
 			return $tags_array;
 		} else {
