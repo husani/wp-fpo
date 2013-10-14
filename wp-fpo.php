@@ -2,32 +2,60 @@
 /*
 Plugin Name: WP FPO
 Plugin URI: http://github.com/husani/wp-fpo
-Description: Automatically create "for placement only" posts - includes inline FPO images and various text content sources.
+Description: Create FPO blog posts to help your WordPress design and development process. This plugin creates randomly-generated content (via Markov chains from various sources) and creates for placement only posts. All posts are tagged #wp-fpo so you can easily find and delete them when necessary.
 Version: 1.0
-Author: Name Of The Plugin Author
-Author URI: http://husani.com
-License: A "Slug" license name e.g. GPL2
+Author: Husani S. Oakley
+Author URI: http://husani.com/
+License: MIT
+*/
+
+/*  
+
+Copyright © 2013, Husani S. Oakley
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 */
 
 class wpfpo{
 
 	var $user_options;
-	var $fpo_category_source = "categories.txt";
-	var $fpo_tag_source = "tags.txt";
+	var $content_sources;
 
 	/**
-	 * Constructor. Perhaps obviously.
+	 * Constructor. Set up WP actions and content source locations
 	 */
 	function __construct(){
 		add_action('admin_menu', array(&$this, 'adminMenu'));	
 		add_action('admin_action_wpfpo', array($this, 'createPosts'));
+		$this->content_sources['content']['loremipsum'] = plugin_dir_path(__FILE__) . "/content/loremipsum.txt";
+		$this->content_sources['content']['usconstitution'] = plugin_dir_path(__FILE__) . "/content/usconstitution.txt";
+		$this->content_sources['content']['birmingham'] = plugin_dir_path(__FILE__) . "/content/birmingham.txt";
+		$this->content_sources['meta']['category'] = plugin_dir_path(__FILE__) . "/content/categories.txt";
+		$this->content_sources['meta']['tag'] = plugin_dir_path(__FILE__) . "/content/tags.txt";
 	}
 	
 	/**
 	 * Add page for this plugin to WP admin.
 	 */
 	function adminMenu(){
-		add_submenu_page('tools.php', 'WP FPO', 'WP FPO', 'manage_options', 'wpfpo', array($this, 'adminUi'));
+		add_submenu_page('tools.php', 'WP FPO', 'WP FPO', 'manage_options', 'wp-fpo', array($this, 'adminUi'));
 	}
 	
 	/**
@@ -42,40 +70,61 @@ class wpfpo{
 	 */
 	function createPosts(){
 		$this->user_options = $_REQUEST;
-		if($this->_doPost()){
-			$status = "success";	
+		if($this->_doPosts()){
+			$status = "success";
 		} else {
 			$status = "failure";
 		}
-		wp_redirect( $_SERVER['HTTP_REFERER'] . "&wpfpo_status=" . $status);
+		wp_redirect( $_SERVER['HTTP_REFERER'] . "&wpfpo_status=" . $status . "&wpfpo_num_posts=" . $_REQUEST['wpfpo_num_posts']);
 		exit();
 	}
 
 	/**
 	 * Create post with content passed to function
 	 */
-	private function _doPost(){
-		$categories = $this->_postCategory();
-		$tags = $this->_postTag();
-
-
-		$args = array(
-					'post_author' => $this->_postAuthor(),
-					'post_content' => $this->_postContent(),
-					'post_excerpt' => $this->_postExcerpt(),
-					'post_title' => $this->_postTitle(),
-			);
-			
-		print_r($args);
-		die;
-		if($post_id = wp_insert_post($args)){
-			//add categories if necessary
-			if($this->user_options['wpfpo_category_bool']){
-				//wp_set_post_terms($post_id);
+	private function _doPosts(){
+		//include markov logic
+		include plugin_dir_path(__FILE__) . "markov/markov.php";
+		
+		//get all content from text files to avoid a bunch of needless i/o
+		$this->source_content = file_get_contents($this->content_sources['content'][$this->user_options['wpfpo_content_source']]);
+		
+		
+		$created_count = 0;
+		for($i = 0; $i < $this->user_options['wpfpo_num_posts']; $i++){
+			$tags = $this->_postTag();
+			$args = array(
+						'post_author' => $this->_postAuthor(),
+						'post_content' => implode("", $this->_postContent()),
+						'post_excerpt' => $this->_postExcerpt(),
+						'post_title' => $this->_postTitle(),
+						'post_status' => 'publish'
+				);	
+			if($post_id = wp_insert_post($args)){
+				//add categories if necessary
+				if($this->user_options['wpfpo_category_bool']){
+					//create categories
+					$categories = $this->_postCategory();
+					foreach($categories as $category){
+						$category_ids[] = wp_create_category($category);
+					}
+					wp_set_post_categories($post_id, $category_ids);
+				}
+				//add tags if necessary
+				if($this->user_options['wpfpo_tag_bool']){
+					//get and assign tags
+					wp_set_post_tags($post_id, $this->_postTag());
+				}
+				//add wpfpo-specific tag
+				wp_set_post_tags($post_id, "wp-fpo", true);
+				//and we're done.
+				$created_count++;
 			}
+		}
+		if($created_count == $this->user_options['wpfpo_num_posts']){
 			return true;
 		} else {
-			return false;		
+			return false;
 		}
 	}
 	
@@ -91,7 +140,7 @@ class wpfpo{
 	 */
 	private function _postCategory(){
 		if($this->user_options['wpfpo_category_bool']){
-			return $this->_getFromTextfile($this->user_options['wpfpo_category_num'], $this->fpo_category_source);
+			return $this->_getFromTextfile($this->user_options['wpfpo_category_num'], $this->content_sources['meta']['category']);
 		} else {
 			return false;
 		}
@@ -102,7 +151,9 @@ class wpfpo{
 	 */
 	private function _postTag(){
 		if($this->user_options['wpfpo_tag_bool']){
-			return $this->_getFromTextfile($this->user_options['wpfpo_tag_num'], $this->fpo_tag_source);
+			$tags_array = $this->_getFromTextfile($this->user_options['wpfpo_tag_num'], $this->content_sources['meta']['tag']);
+			array_unshift($tags_array, "wp-fpo");
+			return $tags_array;
 		} else {
 			return false;
 		}
@@ -112,55 +163,78 @@ class wpfpo{
 	 * Generate FPO content
 	 */
 	private function _postContent(){
-		//include markov logic
-		include plugin_dir_path(__FILE__) . "markov/markov.php";		
-
 		//set up table
-		$markov_table = generate_markov_table(file_get_contents(plugin_dir_path(__FILE__) . "/content/" . "loremipsum.txt"), 50);
+		$markov_table = generate_markov_table($this->source_content, 50);
 
 		//let's start generating content. two ways to do this -- blocks of paragraphs or include fun html stuff, depending on user choice.
 		$content_array = array();
 		
 		switch($this->user_options['wpfpo_content_structure']){
 			case "flat":
-				$num_paragraphs = rand(3,10);
+				$num_paragraphs = rand(3,12);
 				for($i = 0; $i < $num_paragraphs; $i++){
-			        $content_array[] = "<p>" . generate_markov_text(rand(250,1000), $markov_table, 50) . "</p>";
+			        $content_array[] = "<p>" . $this->_fixText(generate_markov_text(rand(250,1000), $markov_table, 50)) . "</p>";
 			    }
 				break;
 			case "rich":
 				//get the flat paragraphs
+				$num_paragraphs = rand(3,7);
+				for($i = 0; $i < $num_paragraphs; $i++){
+			        $content_array[] = "<p>" . $this->_fixText(generate_markov_text(rand(250,1000), $markov_table, 50)) . "</p>";
+			    }				
+				//get markov'd sentence and make blockquote
+				$content_array[] = "<blockquote>" . $this->_fixText(generate_markov_text(200, $markov_table, 50)) . "</blockquote>";
 				
-				//randomly choose words to bold/ital
-				
-				//get markov'd sentences...
-				
-				//...then make those sentences randomly h1...h6
-				break;
-			case "both":
+				//get markov'd sentences and randomly apply h1 ... h6 
+				$num_paragraphs = rand(2,6);
+				for($i = 0; $i < $num_paragraphs; $i++){
+					$rand_html = rand(1,6);
+			        $content_array[] = "<h" . $rand_html . ">" . $this->_fixText(generate_markov_text(150, $markov_table, 50)) . "</h" . $rand_html . ">";
+			    }
+				//randomly reorder content
+				shuffle($content_array);
 				break;
 		}
-		print_r($content_array);
-		die;
+		return $content_array;
+	}
+	
+	/** 
+	 * Generate FPO excerpt
+	 */
+	private function _postExcerpt(){
+		$markov_table = generate_markov_table($this->source_content, 50);
+		return $this->_fixText(generate_markov_text(250, $markov_table, 50));
 	}
 	
 	/**
 	 * Generate FPO title
 	 */
 	private function _postTitle(){
-		return "a fake title";
+		$markov_table = generate_markov_table($this->source_content, 15);
+		return $this->_fixText(generate_markov_text(5, $markov_table, 5));
 	}
 
 	/**
 	 * Open and retrieve lines from a text file
 	 */
 	private function _getFromTextFile($num_lines, $textfile){
-		$content = file(plugin_dir_path(__FILE__) . "/content/" . $textfile);
+		$content = file($textfile);
 		$lines_array = array();
 		for($i = 0; $i < $num_lines; $i++){
 		    $lines_array[] = $content[rand(0, count($content) - 1)];
 		}
 		return $lines_array;
+	}
+	
+	/**
+	 * Make the FPO markov'd text a little more realistic - ensure sentences look like they begin and end properly.
+	 */
+	private function _fixText($string){
+		//kill linebreaks
+		$string = str_replace("\n", "", $string);
+		//make sure we start with a letter and do not end with a space
+		$string = trim($string, ",. ");
+		return ucfirst($string . ".");
 	}
 
 }
