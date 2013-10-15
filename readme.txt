@@ -1,12 +1,10 @@
 === Plugin Name ===
 Contributors: husani
-Donate link: http://example.com/
 Tags: fpo, for placement only, lorem ipsum
 Requires at least: 3.0.1
-Tested up to: 3.4
+Tested up to: 3.6.1
 Stable tag: 1
-License: MIT
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License: GPL2
 
 Automatically create FPO blog posts to help your WordPress design and development process.
 
