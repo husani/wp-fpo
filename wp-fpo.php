@@ -88,7 +88,7 @@ class wpfpo{
 		for($i = 0; $i < $this->user_options['wpfpo_num_posts']; $i++){
 			$tags = $this->_postTag();
 			$args = array(
-						'post_author' => $this->_postAuthor(),
+						'post_author' => $this->user_options['wpfpo_author_id'],
 						'post_content' => implode("", $this->_postContent()),
 						'post_excerpt' => $this->_postExcerpt(),
 						'post_title' => $this->_postTitle(),
